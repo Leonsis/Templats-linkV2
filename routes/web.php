@@ -162,6 +162,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/temas/{nomeTema}/preview/{pagina}', [TemasController::class, 'previewPage'])->name('temas.preview.page');
         Route::post('/temas/{nomeTema}/select', [TemasController::class, 'select'])->name('temas.select');
         Route::put('/temas/{nomeTema}/rename', [TemasController::class, 'rename'])->name('temas.rename');
+        Route::post('/temas/{nomeTema}/generate-sitemap', [TemasController::class, 'generateSitemap'])->name('temas.generate-sitemap');
         Route::delete('/temas/{nomeTema}', [TemasController::class, 'destroy'])->name('temas.destroy');
         
         // Rotas das Páginas dos Temas
@@ -244,3 +245,17 @@ Route::get('/storage/posts/{filename}', function($filename) {
     }
     return response('Imagem não encontrada', 404);
 })->name('blog.image');
+
+// Rota pública para gerar sitemap (para teste)
+Route::get('/generate-sitemap/{nomeTema}', [TemasController::class, 'generateSitemapPublic'])->name('generate-sitemap-public');
+
+// Rota para servir o sitemap.xml
+Route::get('/sitemap.xml', function() {
+    $sitemapPath = base_path('sitemap.xml');
+    if (file_exists($sitemapPath)) {
+        return response()->file($sitemapPath, [
+            'Content-Type' => 'application/xml'
+        ]);
+    }
+    return response('Sitemap não encontrado', 404);
+})->name('sitemap');

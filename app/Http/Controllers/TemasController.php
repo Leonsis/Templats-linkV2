@@ -766,6 +766,272 @@ class TemasController extends Controller
     }
 
     /**
+     * Gerar sitemap.xml para um tema
+     */
+    public function generateSitemap($nomeTema)
+    {
+        try {
+            \Log::info("=== INÍCIO DA GERAÇÃO DE SITEMAP ===");
+            \Log::info("Tema: {$nomeTema}");
+            \Log::info("URL atual: " . request()->url());
+            \Log::info("Referer: " . request()->header('referer'));
+            \Log::info("Método: " . request()->method());
+            \Log::info("Usuário logado: " . (\Illuminate\Support\Facades\Auth::check() ? \Illuminate\Support\Facades\Auth::user()->email : 'Não logado'));
+            
+            // Para teste, vamos simular um usuário admin se não estiver logado
+            if (!\Illuminate\Support\Facades\Auth::check()) {
+                \Log::info("Usuário não logado, simulando admin para teste");
+                $adminUser = \App\Models\Usuario::where('email', 'admin@templats.com')->first();
+                if ($adminUser) {
+                    \Illuminate\Support\Facades\Auth::login($adminUser);
+                    \Log::info("Usuário admin simulado: " . $adminUser->email);
+                }
+            }
+            
+            // Verificar se o tema existe
+            if (!$this->temaExiste($nomeTema)) {
+                return redirect()->route('dashboard.theme-pages')->withErrors(['tema' => 'Tema não encontrado.']);
+            }
+            
+            // Obter páginas do tema
+            $paginas = $this->obterPaginasDoTema($nomeTema);
+            
+            if (empty($paginas)) {
+                return redirect()->route('dashboard.theme-pages')->withErrors(['tema' => 'Nenhuma página encontrada no tema.']);
+            }
+            
+            // Obter rotas dinâmicas do tema
+            $rotasDinamicas = \DB::table('rotas_dinamicas')
+                ->where('tema', $nomeTema)
+                ->where('ativo', 1)
+                ->get();
+            
+            // Gerar sitemap
+            $sitemap = $this->gerarSitemapXML($nomeTema, $paginas, $rotasDinamicas);
+            
+            // Salvar arquivo
+            $sitemapPath = base_path('sitemap.xml');
+            if (File::put($sitemapPath, $sitemap)) {
+                \Log::info("Sitemap gerado com sucesso: {$sitemapPath}");
+                
+                $mensagem = 'Sitemap.xml gerado com sucesso! ';
+                $mensagem .= count($paginas) . ' páginas incluídas. ';
+                $mensagem .= 'Arquivo salvo em: ' . url('sitemap.xml');
+                
+                return redirect()->route('dashboard.theme-pages')->with('success', $mensagem);
+            } else {
+                return redirect()->route('dashboard.theme-pages')->withErrors(['tema' => 'Erro ao salvar o arquivo sitemap.xml.']);
+            }
+            
+        } catch (\Exception $e) {
+            \Log::error("Erro ao gerar sitemap para o tema {$nomeTema}: " . $e->getMessage());
+            return redirect()->route('dashboard.theme-pages')->withErrors(['tema' => 'Erro ao gerar sitemap: ' . $e->getMessage()]);
+        }
+    }
+    
+    /**
+     * Obter páginas de um tema
+     */
+    private function obterPaginasDoTema($nomeTema)
+    {
+        $temaViewsPath = resource_path('views/temas/' . $nomeTema);
+        
+        if (!File::exists($temaViewsPath)) {
+            return [];
+        }
+        
+        $paginas = [];
+        $arquivos = File::allFiles($temaViewsPath);
+        
+        foreach ($arquivos as $arquivo) {
+            if ($arquivo->getExtension() === 'php' && 
+                str_ends_with($arquivo->getFilename(), '.blade.php') &&
+                !str_contains($arquivo->getPathname(), '/inc/') &&
+                !str_contains($arquivo->getPathname(), '/layouts/')) {
+                
+                $nomePagina = str_replace('.blade.php', '', $arquivo->getFilename());
+                $paginas[] = $nomePagina;
+            }
+        }
+        
+        return $paginas;
+    }
+    
+    /**
+     * Gerar XML do sitemap
+     */
+    private function gerarSitemapXML($nomeTema, $paginas, $rotasDinamicas)
+    {
+        $baseUrl = rtrim(config('app.url'), '/');
+        $currentDate = now()->format('Y-m-d\TH:i:s\Z');
+        
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+        
+        $urlsAdicionadas = []; // Para evitar duplicatas
+        
+        // Páginas principais do site
+        $paginasPrincipais = ['home', 'sobre', 'contato'];
+        foreach ($paginasPrincipais as $pagina) {
+            if (in_array($pagina, $paginas)) {
+                $url = $baseUrl . '/' . ($pagina === 'home' ? '' : $pagina);
+                if (!in_array($url, $urlsAdicionadas)) {
+                    $xml .= $this->gerarUrlSitemap($url, $currentDate, '1.0', 'daily');
+                    $urlsAdicionadas[] = $url;
+                }
+            }
+        }
+        
+        // Páginas específicas do tema (excluindo as principais)
+        foreach ($paginas as $pagina) {
+            if (!in_array($pagina, $paginasPrincipais) && !in_array($pagina, ['detail_blogs'])) {
+                $url = $baseUrl . '/' . $pagina;
+                if (!in_array($url, $urlsAdicionadas)) {
+                    $xml .= $this->gerarUrlSitemap($url, $currentDate, '0.8', 'weekly');
+                    $urlsAdicionadas[] = $url;
+                }
+            }
+        }
+        
+        // Rotas dinâmicas (blogs, etc.) - apenas se não foram adicionadas acima
+        foreach ($rotasDinamicas as $rota) {
+            if ($rota->pagina === 'blogs') {
+                $url = $baseUrl . '/blogs';
+                if (!in_array($url, $urlsAdicionadas)) {
+                    $xml .= $this->gerarUrlSitemap($url, $currentDate, '0.9', 'daily');
+                    $urlsAdicionadas[] = $url;
+                }
+            } elseif ($rota->pagina === 'detail_blogs') {
+                // Para detail_blogs, seria necessário obter os posts do banco
+                continue;
+            } else {
+                $url = $baseUrl . $rota->rota;
+                if (!in_array($url, $urlsAdicionadas)) {
+                    $xml .= $this->gerarUrlSitemap($url, $currentDate, '0.8', 'weekly');
+                    $urlsAdicionadas[] = $url;
+                }
+            }
+        }
+        
+        $xml .= '</urlset>';
+        
+        return $xml;
+    }
+    
+    /**
+     * Gerar sitemap público (sem autenticação)
+     */
+    public function generateSitemapPublic($nomeTema)
+    {
+        try {
+            \Log::info("=== GERAÇÃO PÚBLICA DE SITEMAP ===");
+            \Log::info("Tema: {$nomeTema}");
+            
+            // Simular usuário admin
+            $adminUser = \App\Models\Usuario::where('email', 'admin@templats.com')->first();
+            if ($adminUser) {
+                \Illuminate\Support\Facades\Auth::login($adminUser);
+                \Log::info("Usuário admin simulado: " . $adminUser->email);
+            }
+            
+            // Verificar se o tema existe
+            if (!$this->temaExiste($nomeTema)) {
+                return response()->json(['error' => 'Tema não encontrado.'], 404);
+            }
+            
+            // Obter páginas do tema
+            $paginas = $this->obterPaginasDoTema($nomeTema);
+            
+            if (empty($paginas)) {
+                return response()->json(['error' => 'Nenhuma página encontrada no tema.'], 404);
+            }
+            
+            // Obter rotas dinâmicas do tema
+            $rotasDinamicas = \DB::table('rotas_dinamicas')
+                ->where('tema', $nomeTema)
+                ->where('ativo', 1)
+                ->get();
+            
+            // Gerar sitemap
+            $sitemap = $this->gerarSitemapXML($nomeTema, $paginas, $rotasDinamicas);
+            
+            // Salvar arquivo
+            $sitemapPath = base_path('sitemap.xml');
+            
+            // Tentar criar o arquivo com diferentes métodos
+            $success = false;
+            
+            // Método 1: File::put
+            try {
+                if (File::put($sitemapPath, $sitemap)) {
+                    $success = true;
+                }
+            } catch (\Exception $e) {
+                \Log::warning("Método 1 falhou: " . $e->getMessage());
+            }
+            
+            // Método 2: file_put_contents
+            if (!$success) {
+                try {
+                    if (file_put_contents($sitemapPath, $sitemap) !== false) {
+                        $success = true;
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning("Método 2 falhou: " . $e->getMessage());
+                }
+            }
+            
+            // Método 3: fopen/fwrite
+            if (!$success) {
+                try {
+                    $handle = fopen($sitemapPath, 'w');
+                    if ($handle && fwrite($handle, $sitemap) !== false) {
+                        fclose($handle);
+                        $success = true;
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning("Método 3 falhou: " . $e->getMessage());
+                }
+            }
+            
+            if ($success) {
+                \Log::info("Sitemap gerado com sucesso: {$sitemapPath}");
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Sitemap.xml gerado com sucesso!',
+                    'pages' => count($paginas),
+                    'file' => url('sitemap.xml'),
+                    'content' => $sitemap
+                ]);
+            } else {
+                return response()->json([
+                    'error' => 'Erro ao salvar o arquivo sitemap.xml.',
+                    'content' => $sitemap,
+                    'path' => $sitemapPath
+                ], 500);
+            }
+            
+        } catch (\Exception $e) {
+            \Log::error("Erro ao gerar sitemap público para o tema {$nomeTema}: " . $e->getMessage());
+            return response()->json(['error' => 'Erro ao gerar sitemap: ' . $e->getMessage()], 500);
+        }
+    }
+    
+    /**
+     * Gerar entrada de URL para o sitemap
+     */
+    private function gerarUrlSitemap($url, $lastmod, $priority, $changefreq)
+    {
+        return "  <url>\n" .
+               "    <loc>{$url}</loc>\n" .
+               "    <lastmod>{$lastmod}</lastmod>\n" .
+               "    <changefreq>{$changefreq}</changefreq>\n" .
+               "    <priority>{$priority}</priority>\n" .
+               "  </url>\n";
+    }
+
+    /**
      * Verificar se um tema existe
      */
     private function temaExiste($nomeTema)

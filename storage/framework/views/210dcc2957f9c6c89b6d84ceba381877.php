@@ -17,17 +17,24 @@
                             Páginas do Tema: <?php echo e($temaAtivo); ?>
 
                         </h5>
-                        <?php if($userCanAccessThemes): ?>
-                            <?php if($temaAtivo !== 'main-Thema'): ?>
-                                <button type="button" 
-                                        class="btn btn-warning btn-sm" 
-                                        onclick="openRenameModal('<?php echo e($temaAtivo); ?>')"
-                                        title="Editar nome do tema">
-                                    <i class="fas fa-edit me-2"></i>
-                                    Editar Nome do Tema
-                                </button>
-                            <?php endif; ?>
-                        <?php endif; ?>
+                         <?php if($userCanAccessThemes): ?>
+                             <?php if($temaAtivo !== 'main-Thema'): ?>
+                                 <button type="button" 
+                                         class="btn btn-warning btn-sm me-2" 
+                                         onclick="openRenameModal('<?php echo e($temaAtivo); ?>')"
+                                         title="Editar nome do tema">
+                                     <i class="fas fa-edit me-2"></i>
+                                     Editar Nome do Tema
+                                 </button>
+                             <?php endif; ?>
+                             <button type="button" 
+                                     class="btn btn-info btn-sm" 
+                                     onclick="generateSitemap('<?php echo e($temaAtivo); ?>')"
+                                     title="Gerar sitemap.xml do tema">
+                                 <i class="fas fa-sitemap me-2"></i>
+                                 Gerar Sitemap
+                             </button>
+                         <?php endif; ?>
                     </div>
                 </div>
                 <div class="card-body">
@@ -261,6 +268,52 @@ function openRenameModal(nomeTema) {
     modal.show();
 }
 
+function generateSitemap(nomeTema) {
+    console.log('Iniciando geração de sitemap para tema:', nomeTema);
+    
+    if (confirm('Deseja gerar o sitemap.xml para o tema "' + nomeTema + '"?\n\nIsso irá analisar todas as páginas do tema e criar um arquivo sitemap.xml na raiz do site.')) {
+        console.log('Usuário confirmou a geração do sitemap');
+        
+        // Mostrar loading
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Gerando...';
+        button.disabled = true;
+        
+        // Criar formulário dinâmico
+        const form = document.createElement('form');
+        form.method = 'POST';
+        const actionUrl = '<?php echo e(route("dashboard.temas.generate-sitemap", ":nomeTema")); ?>'.replace(':nomeTema', nomeTema);
+        form.action = actionUrl;
+        form.style.display = 'none';
+        
+        console.log('URL da ação:', actionUrl);
+        
+        // Adicionar token CSRF
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = '_token';
+        csrfToken.value = '<?php echo e(csrf_token()); ?>';
+        form.appendChild(csrfToken);
+        
+        console.log('Token CSRF:', csrfToken.value);
+        
+        // Adicionar ao body e submeter
+        document.body.appendChild(form);
+        console.log('Formulário criado e adicionado ao DOM');
+        console.log('Submetendo formulário...');
+        form.submit();
+        
+        // Restaurar botão após 5 segundos (fallback)
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }, 5000);
+    } else {
+        console.log('Usuário cancelou a geração do sitemap');
+    }
+}
+
 // Atualizar preview do nome da nova página
 document.getElementById('newPageName').addEventListener('input', function() {
     const newName = this.value.trim();
@@ -280,7 +333,7 @@ document.getElementById('newPageName').addEventListener('input', function() {
         // Mostrar rota dinâmica
         const routeName = fileName.replace(/-/g, '-');
         const temaAtivo = '<?php echo e(\App\Helpers\ThemeHelper::getActiveTheme()); ?>';
-        routePreview.textContent = `<?php echo e(route('tema.Dentista24h.blogs')); ?>`.replace('blogs', routeName);
+        routePreview.textContent = `<?php echo e(route('tema.Griffo.blogs')); ?>`.replace('blogs', routeName);
         routePreview.className = 'text-success';
     } else {
         preview.textContent = '';
