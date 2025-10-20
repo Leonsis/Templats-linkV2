@@ -1,16 +1,34 @@
 <?php $__env->startSection('title', 'Páginas do Tema'); ?>
 
 <?php $__env->startSection('content'); ?>
+
+<?php
+    $allowedEmails = ['admin@templats-link.com'];
+    $userCanAccessThemes = in_array(auth()->user()->email, $allowedEmails);
+?>
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-file-alt me-2"></i>
-                        Páginas do Tema: <?php echo e($temaAtivo); ?>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-file-alt me-2"></i>
+                            Páginas do Tema: <?php echo e($temaAtivo); ?>
 
-                    </h5>
+                        </h5>
+                        <?php if($userCanAccessThemes): ?>
+                            <?php if($temaAtivo !== 'main-Thema'): ?>
+                                <button type="button" 
+                                        class="btn btn-warning btn-sm" 
+                                        onclick="openRenameModal('<?php echo e($temaAtivo); ?>')"
+                                        title="Editar nome do tema">
+                                    <i class="fas fa-edit me-2"></i>
+                                    Editar Nome do Tema
+                                </button>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 <div class="card-body">
                     <?php if(empty($paginas)): ?>
@@ -75,10 +93,7 @@
                                                     <i class="fas fa-cog me-2"></i>
                                                     Configurar
                                                 </a>
-                                                <?php
-                                                    $allowedEmails = ['admin@templats-link.com'];
-                                                    $userCanAccessThemes = in_array(auth()->user()->email, $allowedEmails);
-                                                ?>
+                                                
                                                 <?php if($userCanAccessThemes): ?>
                                                     <button type="button" 
                                                             class="btn btn-outline-secondary btn-sm" 
@@ -235,6 +250,17 @@ function openDeleteModal(pageName) {
     modal.show();
 }
 
+function openRenameModal(nomeTema) {
+    document.getElementById('temaAtual').value = nomeTema;
+    document.getElementById('novoNome').value = '';
+    document.getElementById('novoNomePreview').textContent = '';
+    document.getElementById('renameForm').action = '<?php echo e(route("dashboard.temas.rename", ":nomeTema")); ?>'.replace(':nomeTema', nomeTema);
+    
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('renameModal'));
+    modal.show();
+}
+
 // Atualizar preview do nome da nova página
 document.getElementById('newPageName').addEventListener('input', function() {
     const newName = this.value.trim();
@@ -309,7 +335,143 @@ document.getElementById('deleteForm').addEventListener('submit', function(e) {
         submitBtn.disabled = false;
     }, 10000);
 });
+
+// Adicionar preview do novo nome do tema
+const novoNomeInput = document.getElementById('novoNome');
+if (novoNomeInput) {
+    novoNomeInput.addEventListener('input', function() {
+        const novoNome = this.value.trim();
+        const preview = document.getElementById('novoNomePreview');
+        
+        if (novoNome) {
+            // Validar nome (apenas letras, números, hífen e underscore)
+            if (/^[a-zA-Z0-9-_]+$/.test(novoNome)) {
+                preview.textContent = novoNome;
+                preview.className = 'text-success';
+            } else {
+                preview.textContent = 'Nome inválido - use apenas letras, números, hífen (-) e underscore (_)';
+                preview.className = 'text-danger';
+            }
+        } else {
+            preview.textContent = '';
+            preview.className = 'text-muted';
+        }
+    });
+}
+
+// Validação do formulário de renomeação
+const renameForm = document.getElementById('renameForm');
+if (renameForm) {
+    renameForm.addEventListener('submit', function(e) {
+        const novoNome = document.getElementById('novoNome').value.trim();
+        
+        if (!novoNome) {
+            e.preventDefault();
+            alert('Por favor, digite um novo nome para o tema.');
+            return;
+        }
+        
+        // Validar nome (apenas letras, números, hífen e underscore)
+        if (!/^[a-zA-Z0-9-_]+$/.test(novoNome)) {
+            e.preventDefault();
+            alert('O nome do tema deve conter apenas letras, números, hífen (-) e underscore (_).');
+            return;
+        }
+        
+        // Mostrar loading no botão
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Renomeando...';
+        submitBtn.disabled = true;
+        
+        // Restaurar botão em caso de erro (será feito pelo servidor)
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 10000);
+    });
+}
 </script>
+
+<!-- Modal de Renomeação do Tema -->
+<div class="modal fade" id="renameModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i>
+                    Editar Nome do Tema
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="renameForm" method="POST">
+                <?php echo csrf_field(); ?>
+                <?php echo method_field('PUT'); ?>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Importante!</strong> Esta ação irá renomear o tema em todo o sistema.
+                    </div>
+                    <div class="mb-3">
+                        <label for="temaAtual" class="form-label">Tema Atual:</label>
+                        <input type="text" class="form-control" id="temaAtual" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="novoNome" class="form-label">Novo Nome do Tema:</label>
+                        <input type="text" 
+                               class="form-control <?php $__errorArgs = ['novo_nome'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" 
+                               id="novoNome" 
+                               name="novo_nome" 
+                               placeholder="Digite o novo nome do tema"
+                               required>
+                        <?php $__errorArgs = ['novo_nome'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                            <div class="invalid-feedback"><?php echo e($message); ?></div>
+                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                        <div class="form-text">
+                            <div>O novo nome será: <span id="novoNomePreview" class="text-muted"></span></div>
+                            <div><small class="text-muted">Use apenas letras, números, hífen (-) e underscore (_)</small></div>
+                        </div>
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Esta ação irá:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Renomear as pastas de assets e views</li>
+                            <li>Atualizar todas as configurações no banco de dados</li>
+                            <li>Atualizar as rotas dinâmicas</li>
+                            <li>Se for o tema ativo, atualizar a configuração principal</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-edit me-2"></i>
+                        Renomear Tema
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <?php $__env->stopSection(); ?>
 
 <?php echo $__env->make('dashboard.layouts.admin', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH /Applications/XAMPP/xamppfiles/htdocs/Templats-linkV2/resources/views/dashboard/theme-pages/index.blade.php ENDPATH**/ ?>

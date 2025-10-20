@@ -161,6 +161,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/temas/{nomeTema}/preview', [TemasController::class, 'preview'])->name('temas.preview');
         Route::get('/temas/{nomeTema}/preview/{pagina}', [TemasController::class, 'previewPage'])->name('temas.preview.page');
         Route::post('/temas/{nomeTema}/select', [TemasController::class, 'select'])->name('temas.select');
+        Route::put('/temas/{nomeTema}/rename', [TemasController::class, 'rename'])->name('temas.rename');
         Route::delete('/temas/{nomeTema}', [TemasController::class, 'destroy'])->name('temas.destroy');
         
         // Rotas das Páginas dos Temas

@@ -15,8 +15,8 @@
     
     // Rotas dinâmicas do tema
     $routeName = request()->route() ? request()->route()->getName() : '';
-    if (str_starts_with($routeName, 'tema.Dentista24h.')) {
-        $currentPage = str_replace('tema.Dentista24h.', '', $routeName);
+    if (str_starts_with($routeName, 'tema.teste.')) {
+        $currentPage = str_replace('tema.teste.', '', $routeName);
     }
 @endphp
 

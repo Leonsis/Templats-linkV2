@@ -14,7 +14,7 @@ class TemasController extends Controller
     {
         // Aplicar middleware de auth apenas aos métodos administrativos
         $this->middleware('auth')->only([
-            'index', 'store', 'destroy', 'select', 'toggleStatus'
+            'index', 'store', 'destroy', 'select', 'toggleStatus', 'rename'
         ]);
         
         $this->middleware(function ($request, $next) {
@@ -28,7 +28,7 @@ class TemasController extends Controller
                 return redirect()->route('dashboard')->with('error', 'Acesso negado. Você não tem permissão para acessar esta seção.');
             }
             return $next($request);
-        })->only(['index', 'store', 'destroy', 'select', 'toggleStatus']);
+        })->only(['index', 'store', 'destroy', 'select', 'toggleStatus', 'rename']);
     }
 
     public function index()
@@ -485,6 +485,317 @@ class TemasController extends Controller
         } catch (\Exception $e) {
             \Log::error("Erro ao remover tema {$nomeTema}: " . $e->getMessage());
             return back()->withErrors(['tema' => 'Erro ao remover o tema: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Renomear um tema
+     */
+    public function rename(Request $request, $nomeTema)
+    {
+        // Não permitir renomear o main-Thema
+        if ($nomeTema === 'main-Thema') {
+            return back()->withErrors(['tema' => 'Não é possível renomear o tema padrão do sistema.']);
+        }
+
+        $request->validate([
+            'novo_nome' => 'required|string|max:50|regex:/^[a-zA-Z0-9-_]+$/',
+        ], [
+            'novo_nome.required' => 'O novo nome do tema é obrigatório.',
+            'novo_nome.regex' => 'O nome do tema deve conter apenas letras, números, hífen (-) e underscore (_).',
+            'novo_nome.max' => 'O nome do tema não pode ter mais de 50 caracteres.',
+        ]);
+
+        $novoNome = $request->input('novo_nome');
+        
+        // Verificar se o novo nome já existe
+        if ($this->temaExiste($novoNome)) {
+            return back()->withErrors(['tema' => 'Já existe um tema com esse nome.']);
+        }
+
+        // Verificar se o tema atual existe
+        if (!$this->temaExiste($nomeTema)) {
+            return back()->withErrors(['tema' => 'Tema não encontrado.']);
+        }
+
+        try {
+            \Log::info("Iniciando renomeação do tema: {$nomeTema} -> {$novoNome}");
+            
+            // 1. Verificar se o tema renomeado é o tema ativo
+            $temaAtivo = \App\Helpers\ThemeHelper::getActiveTheme();
+            $isTemaAtivo = ($temaAtivo === $nomeTema);
+            
+            // 2. Renomear pasta de assets
+            $temaPathAntigo = public_path('temas/' . $nomeTema);
+            $temaPathNovo = public_path('temas/' . $novoNome);
+            if (File::exists($temaPathAntigo)) {
+                File::move($temaPathAntigo, $temaPathNovo);
+                \Log::info("Assets renomeados: {$temaPathAntigo} -> {$temaPathNovo}");
+            }
+            
+            // 3. Renomear pasta de views
+            $temaViewsPathAntigo = resource_path('views/temas/' . $nomeTema);
+            $temaViewsPathNovo = resource_path('views/temas/' . $novoNome);
+            if (File::exists($temaViewsPathAntigo)) {
+                File::move($temaViewsPathAntigo, $temaViewsPathNovo);
+                \Log::info("Views renomeadas: {$temaViewsPathAntigo} -> {$temaViewsPathNovo}");
+            }
+            
+            // 4. Atualizar configurações no banco de dados
+            \DB::table('head_configs')
+                ->where('tema', $nomeTema)
+                ->update(['tema' => $novoNome]);
+            \Log::info("Configurações atualizadas na tabela head_configs");
+            
+            // 5. Atualizar rotas dinâmicas no banco
+            \DB::table('rotas_dinamicas')
+                ->where('tema', $nomeTema)
+                ->update(['tema' => $novoNome]);
+            \Log::info("Rotas dinâmicas atualizadas na tabela rotas_dinamicas");
+            
+            // 6. Atualizar registro do tema na tabela temas
+            \DB::table('temas')
+                ->where('slug', $nomeTema)
+                ->update([
+                    'nome' => ucfirst(str_replace(['-', '_'], ' ', $novoNome)),
+                    'slug' => $novoNome,
+                    'updated_at' => now()
+                ]);
+            \Log::info("Registro do tema atualizado na tabela temas");
+            
+            // 7. Se o tema renomeado era o ativo, atualizar configuração
+            if ($isTemaAtivo) {
+                $this->atualizarTemaAtivo($novoNome);
+            }
+            
+            // 8. Atualizar referências nos arquivos do tema
+            $this->atualizarReferenciasTema($nomeTema, $novoNome);
+            
+            // 9. Atualizar referências no dashboard e outros arquivos
+            $this->atualizarReferenciasSistema($nomeTema, $novoNome);
+            
+            // 10. Limpar cache do sistema
+            \Artisan::call('config:clear');
+            \Artisan::call('view:clear');
+            \Artisan::call('route:clear');
+            \Log::info("Cache do sistema limpo");
+            
+            \Log::info("Renomeação do tema {$nomeTema} para {$novoNome} finalizada com sucesso");
+            
+            $mensagem = 'Tema renomeado com sucesso! ';
+            $mensagem .= "De '{$nomeTema}' para '{$novoNome}'. ";
+            $mensagem .= 'Assets, views, configurações, rotas dinâmicas, referências nos arquivos do tema e no sistema foram atualizados.';
+            
+            return redirect()->route('dashboard.temas')->with('success', $mensagem);
+            
+        } catch (\Exception $e) {
+            \Log::error("Erro ao renomear tema {$nomeTema}: " . $e->getMessage());
+            return back()->withErrors(['tema' => 'Erro ao renomear o tema: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Atualizar referências do tema nos arquivos
+     */
+    private function atualizarReferenciasTema($nomeTemaAntigo, $nomeTemaNovo)
+    {
+        try {
+            \Log::info("Iniciando atualização de referências: {$nomeTemaAntigo} -> {$nomeTemaNovo}");
+            
+            $temaViewsPath = resource_path('views/temas/' . $nomeTemaNovo);
+            
+            if (!File::exists($temaViewsPath)) {
+                \Log::warning("Diretório do tema não encontrado: {$temaViewsPath}");
+                return;
+            }
+            
+            // Buscar todos os arquivos .blade.php do tema
+            $arquivos = $this->getArquivosBlade($temaViewsPath);
+            
+            $totalArquivosAtualizados = 0;
+            $totalReferenciasAtualizadas = 0;
+            
+            foreach ($arquivos as $arquivo) {
+                $conteudo = File::get($arquivo);
+                $conteudoOriginal = $conteudo;
+                
+                // 1. Atualizar @extends
+                $conteudo = str_replace(
+                    "extends('temas.{$nomeTemaAntigo}.layouts.app')",
+                    "extends('temas.{$nomeTemaNovo}.layouts.app')",
+                    $conteudo
+                );
+                
+                // 2. Atualizar @include
+                $conteudo = str_replace(
+                    "include('temas.{$nomeTemaAntigo}.inc.",
+                    "include('temas.{$nomeTemaNovo}.inc.",
+                    $conteudo
+                );
+                
+                // 3. Atualizar rotas
+                $conteudo = str_replace(
+                    "route('tema.{$nomeTemaAntigo}.",
+                    "route('tema.{$nomeTemaNovo}.",
+                    $conteudo
+                );
+                
+                // 4. Atualizar assets
+                $conteudo = str_replace(
+                    "asset('temas/{$nomeTemaAntigo}/assets/",
+                    "asset('temas/{$nomeTemaNovo}/assets/",
+                    $conteudo
+                );
+                
+                // 5. Atualizar referências nos helpers
+                $conteudo = str_replace(
+                    "'{$nomeTemaAntigo}'",
+                    "'{$nomeTemaNovo}'",
+                    $conteudo
+                );
+                
+                // Se houve mudanças, salvar o arquivo
+                if ($conteudo !== $conteudoOriginal) {
+                    File::put($arquivo, $conteudo);
+                    $totalArquivosAtualizados++;
+                    
+                    // Contar quantas referências foram atualizadas
+                    $referenciasAntigas = substr_count($conteudoOriginal, $nomeTemaAntigo);
+                    $referenciasNovas = substr_count($conteudo, $nomeTemaNovo);
+                    $totalReferenciasAtualizadas += ($referenciasAntigas - $referenciasNovas);
+                    
+                    \Log::info("Arquivo atualizado: " . basename($arquivo));
+                }
+            }
+            
+            \Log::info("Atualização de referências concluída", [
+                'arquivos_atualizados' => $totalArquivosAtualizados,
+                'referencias_atualizadas' => $totalReferenciasAtualizadas
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error("Erro ao atualizar referências do tema: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Atualizar referências do tema no sistema (dashboard, etc.)
+     */
+    private function atualizarReferenciasSistema($nomeTemaAntigo, $nomeTemaNovo)
+    {
+        try {
+            \Log::info("Iniciando atualização de referências do sistema: {$nomeTemaAntigo} -> {$nomeTemaNovo}");
+            
+            $arquivosSistema = [
+                // Dashboard de páginas do tema
+                resource_path('views/dashboard/theme-pages/index.blade.php'),
+                // Outros arquivos que possam referenciar o tema
+                resource_path('views/dashboard/temas/index.blade.php'),
+            ];
+            
+            $totalArquivosAtualizados = 0;
+            
+            foreach ($arquivosSistema as $arquivo) {
+                if (!File::exists($arquivo)) {
+                    continue;
+                }
+                
+                $conteudo = File::get($arquivo);
+                $conteudoOriginal = $conteudo;
+                
+                // 1. Atualizar rotas no JavaScript
+                $conteudo = str_replace(
+                    "route('tema.{$nomeTemaAntigo}.",
+                    "route('tema.{$nomeTemaNovo}.",
+                    $conteudo
+                );
+                
+                // 2. Atualizar referências em strings
+                $conteudo = str_replace(
+                    "'{$nomeTemaAntigo}'",
+                    "'{$nomeTemaNovo}'",
+                    $conteudo
+                );
+                
+                // 3. Atualizar referências em comentários ou textos
+                $conteudo = str_replace(
+                    "{$nomeTemaAntigo}",
+                    "{$nomeTemaNovo}",
+                    $conteudo
+                );
+                
+                // Se houve mudanças, salvar o arquivo
+                if ($conteudo !== $conteudoOriginal) {
+                    File::put($arquivo, $conteudo);
+                    $totalArquivosAtualizados++;
+                    \Log::info("Arquivo do sistema atualizado: " . basename($arquivo));
+                }
+            }
+            
+            \Log::info("Atualização de referências do sistema concluída", [
+                'arquivos_atualizados' => $totalArquivosAtualizados
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error("Erro ao atualizar referências do sistema: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Buscar todos os arquivos .blade.php de um diretório
+     */
+    private function getArquivosBlade($diretorio)
+    {
+        $arquivos = [];
+        
+        if (!File::exists($diretorio)) {
+            return $arquivos;
+        }
+        
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($diretorio)
+        );
+        
+        foreach ($iterator as $arquivo) {
+            if ($arquivo->isFile() && $arquivo->getExtension() === 'php') {
+                $arquivos[] = $arquivo->getPathname();
+            }
+        }
+        
+        return $arquivos;
+    }
+
+    /**
+     * Verificar se um tema existe
+     */
+    private function temaExiste($nomeTema)
+    {
+        if ($nomeTema === 'main-Thema') {
+            return File::exists(resource_path('views/main-Thema'));
+        }
+        
+        $temaPath = public_path('temas/' . $nomeTema);
+        $temaViewsPath = resource_path('views/temas/' . $nomeTema);
+        
+        return File::exists($temaPath) && File::exists($temaViewsPath);
+    }
+
+    /**
+     * Atualizar tema ativo no arquivo de configuração
+     */
+    private function atualizarTemaAtivo($novoNome)
+    {
+        try {
+            $configPath = config_path('tema_principal.php');
+            $configContent = "<?php\n\nreturn [\n    'tema_principal' => '{$novoNome}',\n    'selecionado_em' => '" . now() . "',\n];\n";
+            
+            if (File::put($configPath, $configContent)) {
+                \Log::info("Tema ativo atualizado para: {$novoNome}");
+            } else {
+                \Log::warning("Erro ao atualizar tema ativo para: {$novoNome}");
+            }
+        } catch (\Exception $e) {
+            \Log::error("Erro ao atualizar tema ativo: " . $e->getMessage());
         }
     }
 
@@ -1993,26 +2304,6 @@ class TemasController extends Controller
         return $mapeamento;
     }
 
-    /**
-     * Buscar todos os arquivos .blade.php
-     */
-    private function getArquivosBlade($diretorio)
-    {
-        $arquivos = [];
-        
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($diretorio, \RecursiveDirectoryIterator::SKIP_DOTS)
-        );
-
-        foreach ($iterator as $arquivo) {
-            if ($arquivo->isFile() && $arquivo->getExtension() === 'php' && 
-                str_ends_with($arquivo->getFilename(), '.blade.php')) {
-                $arquivos[] = $arquivo->getPathname();
-            }
-        }
-
-        return $arquivos;
-    }
 
     /**
      * Substituir links em um arquivo

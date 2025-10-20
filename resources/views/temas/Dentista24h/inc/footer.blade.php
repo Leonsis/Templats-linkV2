@@ -47,7 +47,7 @@
                   </div>
                   <div>Contato</div>
                 </a>
-                <a href="{{ route('tema.Dentista24h.emergencia24') }}" class="footer-widget-link w-inline-block">
+                <a href="{{ route('sobre') }}" class="footer-widget-link w-inline-block">
                   <div class="footer-widget-line-wrap">
                     <div class="footer-widget-line"></div>
                   </div>

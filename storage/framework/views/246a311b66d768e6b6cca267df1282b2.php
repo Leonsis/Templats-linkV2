@@ -1,8 +1,6 @@
-@extends('dashboard.layouts.admin')
+<?php $__env->startSection('title', 'Gerenciar Temas'); ?>
 
-@section('title', 'Gerenciar Temas')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="content-area">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
         <div class="flex-grow-1">
@@ -23,8 +21,8 @@
             <small class="text-muted">Faça upload dos arquivos do tema para instalá-lo no sistema</small>
         </div>
         <div class="card-body">
-            <form action="{{ route('dashboard.temas.store') }}" method="POST" enctype="multipart/form-data" id="themeForm">
-                @csrf
+            <form action="<?php echo e(route('dashboard.temas.store')); ?>" method="POST" enctype="multipart/form-data" id="themeForm">
+                <?php echo csrf_field(); ?>
                 <div class="row">
                     <div class="col-12 col-md-4">
                         <div class="mb-3">
@@ -32,15 +30,29 @@
                                 <i class="fas fa-tag me-1"></i>Nome do Tema
                             </label>
                             <input type="text" 
-                                   class="form-control @error('nome_tema') is-invalid @enderror" 
+                                   class="form-control <?php $__errorArgs = ['nome_tema'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" 
                                    id="nome_tema" 
                                    name="nome_tema" 
-                                   value="{{ old('nome_tema') }}"
+                                   value="<?php echo e(old('nome_tema')); ?>"
                                    placeholder="Ex: tema-azul, meu-tema, etc."
                                    required>
-                            @error('nome_tema')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                            <?php $__errorArgs = ['nome_tema'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                <div class="invalid-feedback"><?php echo e($message); ?></div>
+                            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             <small class="form-text text-muted">
                                 <i class="fas fa-info-circle me-1"></i>Use apenas letras, números, hífens e underscores
                             </small>
@@ -64,14 +76,28 @@
                                    4. Comprima tudo em um arquivo ZIP"></i>
                             </label>
                             <input type="file" 
-                                   class="form-control @error('arquivo_zip') is-invalid @enderror" 
+                                   class="form-control <?php $__errorArgs = ['arquivo_zip'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" 
                                    id="arquivo_zip" 
                                    name="arquivo_zip" 
                                    accept=".zip"
                                    required>
-                            @error('arquivo_zip')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                            <?php $__errorArgs = ['arquivo_zip'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                <div class="invalid-feedback"><?php echo e($message); ?></div>
+                            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             <small class="form-text text-muted">
                                 <i class="fas fa-info-circle me-1"></i>CSS, JS, imagens, etc. (Máx: 10MB)
                             </small>
@@ -95,13 +121,27 @@
                                    • etc..."></i>
                             </label>
                             <input type="file" 
-                                   class="form-control @error('arquivo_paginas') is-invalid @enderror" 
+                                   class="form-control <?php $__errorArgs = ['arquivo_paginas'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" 
                                    id="arquivo_paginas" 
                                    name="arquivo_paginas"
                                    accept=".zip">
-                            @error('arquivo_paginas')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                            <?php $__errorArgs = ['arquivo_paginas'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                <div class="invalid-feedback"><?php echo e($message); ?></div>
+                            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             <small class="form-text text-muted">
                                 Páginas HTML/Blade (Máx: 10MB)
                             </small>
@@ -114,14 +154,28 @@
                     <div class="col-md-6">
                         <div class="mb-3">
                             <label for="codigo_head" class="form-label">Código do head.blade.php</label>
-                            <textarea class="form-control @error('codigo_head') is-invalid @enderror" 
+                            <textarea class="form-control <?php $__errorArgs = ['codigo_head'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" 
                                       id="codigo_head" 
                                       name="codigo_head" 
                                       rows="8" 
-                                      placeholder="Cole aqui o código do arquivo head.blade.php">{{ old('codigo_head') }}</textarea>
-                            @error('codigo_head')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                                      placeholder="Cole aqui o código do arquivo head.blade.php"><?php echo e(old('codigo_head')); ?></textarea>
+                            <?php $__errorArgs = ['codigo_head'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                <div class="invalid-feedback"><?php echo e($message); ?></div>
+                            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             <small class="form-text text-muted">
                                 Código HTML para o cabeçalho (meta tags, CSS, etc.)
                             </small>
@@ -130,14 +184,28 @@
                     <div class="col-md-6">
                         <div class="mb-3">
                             <label for="codigo_nav" class="form-label">Código do nav.blade.php</label>
-                            <textarea class="form-control @error('codigo_nav') is-invalid @enderror" 
+                            <textarea class="form-control <?php $__errorArgs = ['codigo_nav'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" 
                                       id="codigo_nav" 
                                       name="codigo_nav" 
                                       rows="8" 
-                                      placeholder="Cole aqui o código do arquivo nav.blade.php">{{ old('codigo_nav') }}</textarea>
-                            @error('codigo_nav')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                                      placeholder="Cole aqui o código do arquivo nav.blade.php"><?php echo e(old('codigo_nav')); ?></textarea>
+                            <?php $__errorArgs = ['codigo_nav'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                <div class="invalid-feedback"><?php echo e($message); ?></div>
+                            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             <small class="form-text text-muted">
                                 Código HTML para a navegação
                             </small>
@@ -149,14 +217,28 @@
                     <div class="col-md-6">
                         <div class="mb-3">
                             <label for="codigo_footer" class="form-label">Código do footer.blade.php</label>
-                            <textarea class="form-control @error('codigo_footer') is-invalid @enderror" 
+                            <textarea class="form-control <?php $__errorArgs = ['codigo_footer'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" 
                                       id="codigo_footer" 
                                       name="codigo_footer" 
                                       rows="8" 
-                                      placeholder="Cole aqui o código do arquivo footer.blade.php">{{ old('codigo_footer') }}</textarea>
-                            @error('codigo_footer')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                                      placeholder="Cole aqui o código do arquivo footer.blade.php"><?php echo e(old('codigo_footer')); ?></textarea>
+                            <?php $__errorArgs = ['codigo_footer'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                <div class="invalid-feedback"><?php echo e($message); ?></div>
+                            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             <small class="form-text text-muted">
                                 Código HTML para o rodapé
                             </small>
@@ -165,14 +247,28 @@
                     <div class="col-md-6">
                         <div class="mb-3">
                             <label for="codigo_scripts" class="form-label">Código do scripts.blade.php</label>
-                            <textarea class="form-control @error('codigo_scripts') is-invalid @enderror" 
+                            <textarea class="form-control <?php $__errorArgs = ['codigo_scripts'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" 
                                       id="codigo_scripts" 
                                       name="codigo_scripts" 
                                       rows="8" 
-                                      placeholder="Cole aqui o código do arquivo scripts.blade.php">{{ old('codigo_scripts') }}</textarea>
-                            @error('codigo_scripts')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                                      placeholder="Cole aqui o código do arquivo scripts.blade.php"><?php echo e(old('codigo_scripts')); ?></textarea>
+                            <?php $__errorArgs = ['codigo_scripts'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                <div class="invalid-feedback"><?php echo e($message); ?></div>
+                            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             <small class="form-text text-muted">
                                 Código JavaScript e scripts
                             </small>
@@ -263,7 +359,7 @@
             <small class="text-muted">Gerencie os temas instalados no sistema</small>
         </div>
         <div class="card-body">
-            @if(count($temas) > 0)
+            <?php if(count($temas) > 0): ?>
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead>
@@ -278,101 +374,102 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($temas as $tema)
+                            <?php $__currentLoopData = $temas; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tema): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                 <tr>
                                     <td>
-                                        <strong>{{ $tema['nome'] }}</strong>
-                                        @if($tema['is_main'])
+                                        <strong><?php echo e($tema['nome']); ?></strong>
+                                        <?php if($tema['is_main']): ?>
                                             <span class="badge bg-primary ms-2">
                                                 <i class="fas fa-home"></i> Padrão
                                             </span>
-                                        @endif
+                                        <?php endif; ?>
                                     </td>
                                     <td>
-                                        <span class="badge bg-info">{{ $tema['arquivos'] }} arquivo(s)</span>
+                                        <span class="badge bg-info"><?php echo e($tema['arquivos']); ?> arquivo(s)</span>
                                     </td>
                                     <td>
-                                        @if($tema['tem_paginas'])
-                                            <span class="badge bg-success">{{ $tema['arquivos_paginas'] }} página(s)</span>
-                                        @else
+                                        <?php if($tema['tem_paginas']): ?>
+                                            <span class="badge bg-success"><?php echo e($tema['arquivos_paginas']); ?> página(s)</span>
+                                        <?php else: ?>
                                             <span class="badge bg-secondary">Sem páginas</span>
-                                        @endif
+                                        <?php endif; ?>
                                     </td>
-                                    <td>{{ $tema['tamanho'] }}</td>
-                                    <td>{{ $tema['criado_em'] }}</td>
+                                    <td><?php echo e($tema['tamanho']); ?></td>
+                                    <td><?php echo e($tema['criado_em']); ?></td>
                                     <td>
-                                        @if($tema['tem_paginas'])
+                                        <?php if($tema['tem_paginas']): ?>
                                             <button type="button" 
                                                     class="btn btn-sm btn-outline-info preview-btn" 
                                                     data-bs-toggle="collapse" 
-                                                    data-bs-target="#pagesAccordion{{ $loop->index }}"
+                                                    data-bs-target="#pagesAccordion<?php echo e($loop->index); ?>"
                                                     aria-expanded="false" 
-                                                    aria-controls="pagesAccordion{{ $loop->index }}"
+                                                    aria-controls="pagesAccordion<?php echo e($loop->index); ?>"
                                                     title="Ver páginas do tema">
                                                 <i class="fas fa-eye"></i>
                                                 <span class="btn-text">Ver Páginas</span>
                                             </button>
-                                        @else
+                                        <?php else: ?>
                                             <span class="text-muted no-pages">Sem páginas</span>
-                                        @endif
+                                        <?php endif; ?>
                                     </td>
                                     <td>
                                         <div class="d-flex flex-wrap gap-1 align-items-center">
-                                            @if($tema['ativo'])
+                                            <?php if($tema['ativo']): ?>
                                                 <span class="badge bg-success">
                                                     <i class="fas fa-check-circle"></i> Ativo
                                                 </span>
-                                            @else
-                                                <form action="{{ route('dashboard.temas.select', $tema['nome']) }}" method="POST" class="d-inline" id="selectForm{{ $loop->index }}">
-                                                    @csrf
+                                            <?php else: ?>
+                                                <form action="<?php echo e(route('dashboard.temas.select', $tema['nome'])); ?>" method="POST" class="d-inline" id="selectForm<?php echo e($loop->index); ?>">
+                                                    <?php echo csrf_field(); ?>
                                                     <button type="submit" 
                                                             class="btn btn-sm btn-success select-theme-btn" 
-                                                            data-tema="{{ $tema['nome'] }}"
-                                                            data-index="{{ $loop->index }}"
-                                                            onclick="return selectTheme('{{ $tema['nome'] }}', {{ $loop->index }})">
+                                                            data-tema="<?php echo e($tema['nome']); ?>"
+                                                            data-index="<?php echo e($loop->index); ?>"
+                                                            onclick="return selectTheme('<?php echo e($tema['nome']); ?>', <?php echo e($loop->index); ?>)">
                                                         <i class="fas fa-star"></i> Selecionar
                                                     </button>
                                                 </form>
-                                            @endif
-                                            @if(!$tema['is_main'])
+                                            <?php endif; ?>
+                                            <?php if(!$tema['is_main']): ?>
                                                 <button type="button" 
                                                         class="btn btn-sm btn-danger" 
-                                                        onclick="confirmarRemocao('{{ $tema['nome'] }}')">
+                                                        onclick="confirmarRemocao('<?php echo e($tema['nome']); ?>')">
                                                     <i class="fas fa-trash"></i> Remover
                                                 </button>
-                                            @else
+                                            <?php else: ?>
                                                 <span class="badge bg-info">
                                                     <i class="fas fa-shield-alt"></i> Sistema
                                                 </span>
-                                            @endif
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
-                                @if($tema['tem_paginas'])
+                                <?php if($tema['tem_paginas']): ?>
                                     <tr class="accordion-row">
                                         <td colspan="7" class="p-0">
-                                            <div class="collapse" id="pagesAccordion{{ $loop->index }}">
+                                            <div class="collapse" id="pagesAccordion<?php echo e($loop->index); ?>">
                                                 <div class="card card-body border-0 bg-light">
                                                     <div class="pages-buttons">
-                                                        @foreach($tema['paginas_disponiveis'] as $pagina)
-                                                            <a href="{{ route('dashboard.temas.preview.page', [$tema['nome'], $pagina]) }}" 
+                                                        <?php $__currentLoopData = $tema['paginas_disponiveis']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $pagina): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                            <a href="<?php echo e(route('dashboard.temas.preview.page', [$tema['nome'], $pagina])); ?>" 
                                                                target="_blank"
                                                                class="btn btn-outline-primary btn-sm d-flex align-items-center">
                                                                 <i class="fas fa-file-alt me-2"></i>
-                                                                {{ ucfirst($pagina) }}
+                                                                <?php echo e(ucfirst($pagina)); ?>
+
                                                             </a>
-                                                        @endforeach
+                                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                                     </div>
                                                 </div>
                                             </div>
                                         </td>
                                     </tr>
-                                @endif
-                            @endforeach
+                                <?php endif; ?>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </tbody>
                     </table>
                 </div>
-            @else
+            <?php else: ?>
                 <div class="text-center py-5">
                     <div class="empty-state">
                         <i class="fas fa-palette fa-3x text-muted mb-3"></i>
@@ -383,7 +480,7 @@
                         </button>
                     </div>
                 </div>
-            @endif
+            <?php endif; ?>
         </div>
     </div>
 </div>
@@ -447,8 +544,8 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <form id="deleteForm" method="POST" style="display: inline;">
-                    @csrf
-                    @method('DELETE')
+                    <?php echo csrf_field(); ?>
+                    <?php echo method_field('DELETE'); ?>
                     <button type="submit" class="btn btn-danger">Remover</button>
                 </form>
             </div>
@@ -457,9 +554,9 @@
 </div>
 
 
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
 // Função para resetar o formulário
 function resetForm() {
@@ -551,7 +648,7 @@ function criarCamposPaginasHtml(numeroPaginas) {
 // Função para confirmar remoção
 function confirmarRemocao(nomeTema) {
     document.getElementById('temaNome').textContent = nomeTema;
-    document.getElementById('deleteForm').action = '{{ route("dashboard.temas.destroy", ":nomeTema") }}'.replace(':nomeTema', nomeTema);
+    document.getElementById('deleteForm').action = '<?php echo e(route("dashboard.temas.destroy", ":nomeTema")); ?>'.replace(':nomeTema', nomeTema);
     
     var modal = new bootstrap.Modal(document.getElementById('confirmModal'));
     modal.show();
@@ -606,10 +703,10 @@ function selectTheme(nomeTema, index) {
 function linkarPaginas(nomeTema) {
     // Definir URLs das páginas de edição
     const paginas = {
-        'home': '{{ route("dashboard.temas.home.edit") }}',
-        'about': '{{ route("dashboard.temas.about.edit") }}',
-        'contact': '{{ route("dashboard.temas.contact.edit") }}',
-        'servico': '{{ route("dashboard.servico.index") }}'
+        'home': '<?php echo e(route("dashboard.temas.home.edit")); ?>',
+        'about': '<?php echo e(route("dashboard.temas.about.edit")); ?>',
+        'contact': '<?php echo e(route("dashboard.temas.contact.edit")); ?>',
+        'servico': '<?php echo e(route("dashboard.servico.index")); ?>'
     };
     
     // Abrir cada página em uma nova aba
@@ -718,4 +815,6 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Admin Panel inicializado com sucesso!');
 });
 </script>
-@endpush
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('dashboard.layouts.admin', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH /Applications/XAMPP/xamppfiles/htdocs/Templats-linkV2/resources/views/dashboard/temas/index.blade.php ENDPATH**/ ?>
