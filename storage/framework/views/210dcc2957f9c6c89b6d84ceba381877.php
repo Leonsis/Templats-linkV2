@@ -75,12 +75,27 @@
                                                     <i class="fas fa-cog me-2"></i>
                                                     Configurar
                                                 </a>
-                                                <button type="button" 
-                                                        class="btn btn-outline-secondary btn-sm" 
-                                                        onclick="openDuplicateModal('<?php echo e($pagina); ?>')"
-                                                        title="Duplicar página">
-                                                    <i class="fas fa-copy"></i>
-                                                </button>
+                                                <?php
+                                                    $allowedEmails = ['admin@templats-link.com'];
+                                                    $userCanAccessThemes = in_array(auth()->user()->email, $allowedEmails);
+                                                ?>
+                                                <?php if($userCanAccessThemes): ?>
+                                                    <button type="button" 
+                                                            class="btn btn-outline-secondary btn-sm" 
+                                                            onclick="openDuplicateModal('<?php echo e($pagina); ?>')"
+                                                            title="Duplicar página">
+                                                        <i class="fas fa-copy"></i>
+                                                    </button>
+                                                    <?php if(!in_array($pagina, ['home', 'sobre', 'contato'])): ?>
+                                                        <button type="button" 
+                                                                class="btn btn-outline-danger btn-sm" 
+                                                                onclick="openDeleteModal('<?php echo e($pagina); ?>')"
+                                                                title="Excluir página">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    <?php endif; ?>
+                                                <?php endif; ?>
+                                                
                                             </div>
                                         </div>
                                     </div>
@@ -134,6 +149,51 @@
     </div>
 </div>
 
+<!-- Modal de Exclusão -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Confirmar Exclusão
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="deleteForm" method="POST">
+                <?php echo csrf_field(); ?>
+                <?php echo method_field('DELETE'); ?>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Atenção!</strong> Esta ação não pode ser desfeita.
+                    </div>
+                    <p>Você está prestes a excluir a página:</p>
+                    <div class="bg-light p-3 rounded">
+                        <strong id="pageToDelete"></strong>
+                    </div>
+                    <p class="mt-3 mb-0">Esta ação irá:</p>
+                    <ul class="list-unstyled mt-2">
+                        <li><i class="fas fa-trash text-danger me-2"></i> Excluir o arquivo da página</li>
+                        <li><i class="fas fa-cog text-danger me-2"></i> Remover todas as configurações</li>
+                        <li><i class="fas fa-route text-danger me-2"></i> Deletar a rota dinâmica</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>
+                        Excluir Página
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <style>
 .icon-circle {
     width: 40px;
@@ -163,6 +223,15 @@ function openDuplicateModal(originalPage) {
     
     // Mostrar modal
     const modal = new bootstrap.Modal(document.getElementById('duplicateModal'));
+    modal.show();
+}
+
+function openDeleteModal(pageName) {
+    document.getElementById('pageToDelete').textContent = pageName + '.blade.php';
+    document.getElementById('deleteForm').action = '<?php echo e(route("dashboard.theme-pages.destroy", ":page")); ?>'.replace(':page', pageName);
+    
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
     modal.show();
 }
 
@@ -216,6 +285,22 @@ document.getElementById('duplicateForm').addEventListener('submit', function(e) 
     const submitBtn = this.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Duplicando...';
+    submitBtn.disabled = true;
+    
+    // Restaurar botão em caso de erro (será feito pelo servidor)
+    setTimeout(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }, 10000);
+});
+
+// Validação do formulário de exclusão
+document.getElementById('deleteForm').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    // Mostrar loading no botão
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Excluindo...';
     submitBtn.disabled = true;
     
     // Restaurar botão em caso de erro (será feito pelo servidor)

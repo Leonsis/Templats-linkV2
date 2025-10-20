@@ -168,6 +168,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/theme-pages/{pagina}', [ThemePageController::class, 'show'])->name('theme-pages.show');
         Route::put('/theme-pages/{pagina}', [ThemePageController::class, 'update'])->name('theme-pages.update');
         Route::post('/theme-pages/{pagina}/duplicate', [ThemePageController::class, 'duplicate'])->name('theme-pages.duplicate');
+        Route::delete('/theme-pages/{pagina}', [ThemePageController::class, 'destroy'])->name('theme-pages.destroy');
         
         
         // Rotas de edição de páginas dos temas

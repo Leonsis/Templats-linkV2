@@ -256,6 +256,66 @@ class ThemePageController extends Controller
     }
     
     /**
+     * Excluir uma página do tema
+     */
+    public function destroy($pagina)
+    {
+        $temaAtivo = ThemeHelper::getActiveTheme();
+        
+        // Verificar se é um tema personalizado
+        if ($temaAtivo === 'main-Thema') {
+            return redirect()->route('dashboard.temas')->with('error', 'As páginas do tema principal não podem ser excluídas.');
+        }
+        
+        // Verificar se a página existe no tema
+        $paginas = $this->obterPaginasDoTema($temaAtivo);
+        if (!in_array($pagina, $paginas)) {
+            return redirect()->route('dashboard.theme-pages')->with('error', 'Página não encontrada no tema.');
+        }
+        
+        // Verificar se é uma página essencial (não pode ser excluída)
+        $paginasEssenciais = ['home', 'sobre', 'contato'];
+        if (in_array($pagina, $paginasEssenciais)) {
+            return redirect()->route('dashboard.theme-pages')->with('error', 'Páginas essenciais (home, sobre, contato) não podem ser excluídas.');
+        }
+        
+        try {
+            $temaViewsPath = resource_path('views/temas/' . $temaAtivo);
+            $arquivoPagina = $temaViewsPath . '/' . $pagina . '.blade.php';
+            
+            // Verificar se o arquivo existe
+            if (!File::exists($arquivoPagina)) {
+                return redirect()->route('dashboard.theme-pages')->with('error', 'Arquivo da página não encontrado.');
+            }
+            
+            // Excluir arquivo da página
+            File::delete($arquivoPagina);
+            
+            // Excluir configurações da página (se existirem)
+            DB::table('head_configs')
+                ->where('pagina', $pagina)
+                ->where('tema', $temaAtivo)
+                ->delete();
+            
+            // Excluir rota dinâmica (se existir)
+            DB::table('rotas_dinamicas')
+                ->where('tema', $temaAtivo)
+                ->where('pagina', $pagina)
+                ->delete();
+            
+            Log::info("Página '{$pagina}' excluída do tema '{$temaAtivo}' com sucesso");
+            
+            return redirect()->route('dashboard.theme-pages')->with('success', 
+                'Página "' . ucfirst($pagina) . '" excluída com sucesso! Arquivo, configurações e rota dinâmica foram removidos.');
+                
+        } catch (\Exception $e) {
+            Log::error('Erro ao excluir página: ' . $e->getMessage());
+            return redirect()->route('dashboard.theme-pages')->with('error', 
+                'Erro ao excluir página. Tente novamente.');
+        }
+    }
+    
+    /**
      * Criar rota dinâmica para uma página
      */
     private function criarRotaDinamica($tema, $pagina)
