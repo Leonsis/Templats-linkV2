@@ -862,7 +862,10 @@ class TemasController extends Controller
      */
     private function gerarSitemapXML($nomeTema, $paginas, $rotasDinamicas)
     {
-        $baseUrl = rtrim(config('app.url'), '/');
+        // Detectar o domínio dinamicamente baseado na requisição atual
+        $baseUrl = $this->detectarDominioAtual();
+        
+        \Log::info("URL base para sitemap: {$baseUrl}");
         $currentDate = now()->format('Y-m-d\TH:i:s\Z');
         
         $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
@@ -905,10 +908,16 @@ class TemasController extends Controller
                 // Para detail_blogs, seria necessário obter os posts do banco
                 continue;
             } else {
-                $url = $baseUrl . $rota->rota;
-                if (!in_array($url, $urlsAdicionadas)) {
-                    $xml .= $this->gerarUrlSitemap($url, $currentDate, '0.8', 'weekly');
-                    $urlsAdicionadas[] = $url;
+                // Verificar se o arquivo da página existe antes de incluir
+                $arquivoPagina = resource_path("views/temas/{$nomeTema}/{$rota->pagina}.blade.php");
+                if (file_exists($arquivoPagina)) {
+                    $url = $baseUrl . $rota->rota;
+                    if (!in_array($url, $urlsAdicionadas)) {
+                        $xml .= $this->gerarUrlSitemap($url, $currentDate, '0.8', 'weekly');
+                        $urlsAdicionadas[] = $url;
+                    }
+                } else {
+                    \Log::info("Página não encontrada: {$rota->pagina}.blade.php - Rota excluída do sitemap");
                 }
             }
         }
@@ -1016,6 +1025,44 @@ class TemasController extends Controller
             \Log::error("Erro ao gerar sitemap público para o tema {$nomeTema}: " . $e->getMessage());
             return response()->json(['error' => 'Erro ao gerar sitemap: ' . $e->getMessage()], 500);
         }
+    }
+    
+    /**
+     * Detectar o domínio atual dinamicamente
+     */
+    private function detectarDominioAtual()
+    {
+        // Tentar obter o domínio da requisição atual
+        $host = request()->getHost();
+        $scheme = request()->getScheme();
+        $port = request()->getPort();
+        
+        // Construir URL base
+        $baseUrl = $scheme . '://' . $host;
+        
+        // Adicionar porta se não for padrão
+        if (($scheme === 'http' && $port !== 80) || ($scheme === 'https' && $port !== 443)) {
+            $baseUrl .= ':' . $port;
+        }
+        
+        // Se estiver em localhost/desenvolvimento, detectar o domínio de produção
+        if (in_array($host, ['localhost', '127.0.0.1']) || strpos($host, 'localhost') !== false) {
+            // Tentar detectar o domínio de produção baseado na configuração
+            $productionUrl = config('app.url');
+            
+            // Se a configuração não for localhost, usar ela
+            if (strpos($productionUrl, 'localhost') === false && strpos($productionUrl, '127.0.0.1') === false) {
+                $baseUrl = rtrim($productionUrl, '/');
+            } else {
+                // Fallback para o domínio conhecido
+                $baseUrl = 'https://griffo.hoogli.cloud';
+            }
+        }
+        
+        // Log para debug
+        \Log::info("Detecção de domínio - Host: {$host}, Scheme: {$scheme}, Port: {$port}, BaseURL: {$baseUrl}");
+        
+        return $baseUrl;
     }
     
     /**
