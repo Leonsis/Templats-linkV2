@@ -251,7 +251,7 @@
     @verbatim @csrf @endverbatim
     &lt;input type="text" name="nome" placeholder="Nome" required&gt;
     &lt;input type="email" name="email" placeholder="Email" required&gt;
-    &lt;input type="tel" name="telefone" placeholder="Telefone" required&gt;
+    &lt;input type="tel" name="tel" placeholder="Telefone" required&gt;
     &lt;input type="text" name="faturamento" placeholder="Ex: EPP, ME, LTDA, S.A" required&gt;
     &lt;button type="submit"&gt;Enviar&lt;/button&gt;
     &lt;div>
