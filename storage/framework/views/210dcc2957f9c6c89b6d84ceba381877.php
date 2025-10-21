@@ -34,6 +34,14 @@
                                  <i class="fas fa-sitemap me-2"></i>
                                  Gerar Sitemap
                              </button>
+                             <button type="button" 
+                                     class="btn btn-success btn-sm" 
+                                     id="robotsBtn"
+                                     onclick="toggleRobots()"
+                                     title="Habilitar/Desabilitar indexação de robôs">
+                                 <i class="fas fa-robot me-2"></i>
+                                 <span id="robotsBtnText">Indexar Robôs</span>
+                             </button>
                          <?php endif; ?>
                     </div>
                 </div>
@@ -524,6 +532,90 @@ unset($__errorArgs, $__bag); ?>
         </div>
     </div>
 </div>
+
+<script>
+// Função para controlar o botão de robots
+let robotsStatus = null;
+
+// Verificar status inicial do robots
+document.addEventListener('DOMContentLoaded', function() {
+    checkRobotsStatus();
+});
+
+function checkRobotsStatus() {
+    fetch('<?php echo e(route("dashboard.robots.status")); ?>')
+        .then(response => response.json())
+        .then(data => {
+            robotsStatus = data;
+            updateRobotsButton();
+        })
+        .catch(error => {
+            console.error('Erro ao verificar status do robots:', error);
+        });
+}
+
+function updateRobotsButton() {
+    const btn = document.getElementById('robotsBtn');
+    const btnText = document.getElementById('robotsBtnText');
+    
+    if (robotsStatus && (robotsStatus.robots_exists || robotsStatus.has_index_meta)) {
+        // Se já está habilitado, mostrar opção para desabilitar
+        btn.className = 'btn btn-danger btn-sm';
+        btnText.textContent = 'Desindexar Robôs';
+        btn.title = 'Desabilitar indexação de robôs';
+    } else {
+        // Se não está habilitado, mostrar opção para habilitar
+        btn.className = 'btn btn-success btn-sm';
+        btnText.textContent = 'Indexar Robôs';
+        btn.title = 'Habilitar indexação de robôs';
+    }
+}
+
+function toggleRobots() {
+    const isEnabled = robotsStatus && (robotsStatus.robots_exists || robotsStatus.has_index_meta);
+    const action = isEnabled ? 'disable' : 'enable';
+    const actionText = isEnabled ? 'desabilitar' : 'habilitar';
+    
+    if (confirm(`Deseja ${actionText} a indexação de robôs?\n\nIsso irá ${actionText === 'habilitar' ? 'criar o arquivo robots.txt e adicionar meta tags de indexação' : 'remover o arquivo robots.txt e desabilitar as meta tags de indexação'}.`)) {
+        // Mostrar loading
+        const button = document.getElementById('robotsBtn');
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processando...';
+        button.disabled = true;
+        
+        // Fazer requisição
+        const url = action === 'enable' ? '<?php echo e(route("dashboard.robots.enable")); ?>' : '<?php echo e(route("dashboard.robots.disable")); ?>';
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Mostrar mensagem de sucesso
+                alert(data.message);
+                
+                // Atualizar status
+                checkRobotsStatus();
+            } else {
+                alert('Erro: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro ao processar solicitação');
+        })
+        .finally(() => {
+            // Restaurar botão
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+    }
+}
+</script>
 
 <?php $__env->stopSection(); ?>
 

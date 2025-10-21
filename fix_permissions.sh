@@ -15,6 +15,10 @@ chmod -R 777 bootstrap/cache/
 echo "Corrigindo permissões da pasta config..."
 chmod 777 config/
 
+# Corrigir permissões da pasta public
+echo "Corrigindo permissões da pasta public..."
+chmod 777 public/
+
 # Corrigir permissões do arquivo de configuração do tema
 echo "Corrigindo permissões do arquivo de configuração do tema..."
 if [ -f "config/tema_principal.php" ]; then

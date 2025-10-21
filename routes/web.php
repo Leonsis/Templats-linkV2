@@ -14,6 +14,7 @@ use App\Http\Controllers\FloatingButtonController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeadManagementController;
 use App\Http\Controllers\BlogController;
+use App\Http\Controllers\RobotsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -200,6 +201,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/leads', [LeadManagementController::class, 'index'])->name('leads');
         Route::get('/leads/{lead}', [LeadManagementController::class, 'show'])->name('leads.show');
         Route::delete('/leads/{lead}', [LeadManagementController::class, 'destroy'])->name('leads.destroy');
+        
+        // Rotas do Robots.txt
+        Route::get('/robots/status', [RobotsController::class, 'status'])->name('robots.status');
+        Route::post('/robots/enable', [RobotsController::class, 'enable'])->name('robots.enable');
+        Route::post('/robots/disable', [RobotsController::class, 'disable'])->name('robots.disable');
     });
 });
 

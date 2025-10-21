@@ -1,7 +1,7 @@
 @extends('temas.Griffo.layouts.app')
 
 @section('html')
-  <html data-wf-page="68dd1530bcbf8eb2a9e0cf3d" data-wf-site="68dd152dbcbf8eb2a9e0ce11" lang="en">
+  <html data-wf-page="68dd1530bcbf8eb2a9e0cf3d" data-wf-site="68dd152dbcbf8eb2a9e0ce11" lang="pt-BR">
 @endsection
 
 @section('content')

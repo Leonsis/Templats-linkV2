@@ -361,6 +361,18 @@ class HeadHelper
         return str_replace('{ano}', date('Y'), $copyright);
     }
     
+    public static function getMetaRobots($pagina = 'global', $tema = null)
+    {
+        // Se não foi passado o tema, usar o tema ativo
+        if (!$tema) {
+            $tema = ThemeHelper::getActiveTheme();
+        }
+        
+        $configs = self::getConfigs($pagina, $tema);
+        
+        return $configs->meta_robots ?? 'index, follow';
+    }
+    
     public static function clearCache($pagina = null, $tema = null)
     {
         if ($pagina && $tema) {

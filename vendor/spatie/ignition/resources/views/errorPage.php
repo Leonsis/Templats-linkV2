@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <?php /** @var \Spatie\Ignition\ErrorPage\ErrorPageViewModel $viewModel */ ?>
-<html lang="en" class="<?= $viewModel->theme() ?>">
+<html lang="pt-BR" class="<?= $viewModel->theme() ?>">
 <!--
 <?= $viewModel->throwableString() ?>
 -->
