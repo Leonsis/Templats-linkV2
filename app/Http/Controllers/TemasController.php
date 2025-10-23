@@ -1146,8 +1146,10 @@ class TemasController extends Controller
             // Renderizar a página
             $viewPath = 'temas.' . $tema . '.' . $pagina;
             
-            // Passar dados específicos para páginas que precisam
-            $dados = [];
+            // Definir a página atual para o HeadHelper funcionar corretamente
+            $dados = [
+                'currentPage' => $pagina
+            ];
             
             // Para a página de blogs, buscar posts do banco
             if ($pagina === 'blogs') {

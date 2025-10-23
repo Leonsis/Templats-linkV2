@@ -3,7 +3,7 @@
     <div class="container">
         <div class="row">
             <div class="col-md-6">
-                <h5><i class="fas fa-link me-2"></i>Templats Link</h5>
+                <h5><i class="fas fa-rocket text-warning me-2 rocket-logo"></i>Templats Link</h5>
                 <p class="mb-0">Somos especialistas em desenvolvimento web, oferecendo templates modernos e soluções personalizadas para sua empresa.</p>
             </div>
             <div class="col-md-6 text-md-end">

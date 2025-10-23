@@ -1,8 +1,9 @@
 <!-- Navigation -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-        <a class="navbar-brand" href="{{ route('home') }}">
-            <i class="fas fa-link me-2"></i>Templats Link
+        <a class="navbar-brand d-flex align-items-center" href="{{ route('home') }}">
+            <i class="fas fa-rocket text-warning me-2 rocket-logo" style="font-size: 1.5rem;"></i>
+            <span class="fw-bold">Templats Link</span>
         </a>
         
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">

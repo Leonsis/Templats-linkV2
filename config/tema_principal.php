@@ -2,5 +2,5 @@
 
 return [
     'tema_principal' => 'Griffo',
-    'selecionado_em' => '2025-10-20 13:56:13',
+    'selecionado_em' => '2025-10-23 08:24:43',
 ];
